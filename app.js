@@ -18,7 +18,11 @@ export function createApp(db = createDb()) {
   app.use(express.json())
 
   // --- system ---
-  app.get('/health', (req, res) => res.json({ status: 'ok' }))
+  // `commit` lets a post-deploy smoke verify the LIVE instance is the version we
+  // just shipped (Render injects RENDER_GIT_COMMIT). 'dev' locally / in CI.
+  app.get('/health', (req, res) =>
+    res.json({ status: 'ok', commit: process.env.RENDER_GIT_COMMIT || 'dev' })
+  )
 
   // --- auth ---
   app.post('/api/login', (req, res) => {
