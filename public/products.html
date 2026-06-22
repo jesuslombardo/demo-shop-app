@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo Shop — Products</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1 data-test="title" id="title">Products</h1>
+      <button data-test="logout" id="logout" class="ghost">Logout</button>
+    </header>
+
+    <main>
+      <section class="card add-form">
+        <h2>Add product</h2>
+        <form id="add-form" novalidate>
+          <input data-test="new-product-name" id="new-product-name" placeholder="Name" />
+          <input data-test="new-product-price" id="new-product-price" type="number" step="0.01" placeholder="Price" />
+          <input data-test="new-product-description" id="new-product-description" placeholder="Description (optional)" />
+          <button data-test="add-product-button" id="add-product-button" type="submit">Add</button>
+        </form>
+        <p data-test="add-error" id="add-error" class="error" hidden></p>
+      </section>
+
+      <section id="product-list" data-test="product-list" class="grid"></section>
+    </main>
+
+    <script src="/js/products.js"></script>
+  </body>
+</html>

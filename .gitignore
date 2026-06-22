@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Local SQLite data (when DB_PATH points to a file)
+*.db
+*.db-journal
+*.sqlite
+
+# Environment
+.env
+
+# Logs
+npm-debug.log*
+
+# OS
+.DS_Store

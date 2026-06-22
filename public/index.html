@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo Shop — Login</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <main class="login">
+      <h1 class="brand">🛒 Demo Shop</h1>
+      <form id="login-form" class="card" novalidate>
+        <input data-test="username" id="username" name="username" placeholder="Username" autocomplete="username" />
+        <input
+          data-test="password"
+          id="password"
+          name="password"
+          type="password"
+          placeholder="Password"
+          autocomplete="current-password"
+        />
+        <button data-test="login-button" id="login-button" type="submit">Login</button>
+        <p data-test="error" id="error" class="error" hidden></p>
+      </form>
+      <p class="hint">Demo user: <code>standard_user</code> / <code>secret_sauce</code></p>
+    </main>
+    <script src="/js/login.js"></script>
+  </body>
+</html>

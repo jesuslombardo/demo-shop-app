@@ -1,0 +1,138 @@
+:root {
+  --bg: #f4f5f7;
+  --card: #ffffff;
+  --ink: #132c49;
+  --accent: #3ddc91;
+  --danger: #e2231a;
+  --muted: #6b7a8d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid #e3e7ec;
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  background: var(--ink);
+  color: #fff;
+}
+
+button.ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--ink);
+}
+
+button.danger {
+  background: var(--danger);
+}
+
+input {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  margin-bottom: 0.6rem;
+  border: 1px solid #cdd5df;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.error {
+  color: var(--danger);
+  font-weight: 600;
+  margin: 0.5rem 0 0;
+}
+
+/* --- login --- */
+.login {
+  max-width: 360px;
+  margin: 8vh auto 0;
+  padding: 1rem;
+  text-align: center;
+}
+
+.brand {
+  margin-bottom: 1rem;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 1rem;
+}
+
+/* --- products --- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  background: var(--ink);
+  color: #fff;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+main {
+  max-width: 960px;
+  margin: 1.5rem auto;
+  padding: 0 1rem;
+}
+
+.add-form {
+  margin-bottom: 1.5rem;
+}
+
+.add-form form {
+  display: grid;
+  grid-template-columns: 2fr 1fr 3fr auto;
+  gap: 0.6rem;
+  align-items: start;
+}
+
+.add-form input {
+  margin-bottom: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.product h3 {
+  margin: 0 0 0.25rem;
+}
+
+.product .price {
+  color: var(--accent);
+  filter: brightness(0.7);
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+.product .desc {
+  color: var(--muted);
+  font-size: 0.85rem;
+  min-height: 3.5rem;
+}
