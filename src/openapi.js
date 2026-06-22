@@ -1,10 +1,25 @@
 const product = {
   type: 'object',
+  // The contract: every product has exactly these fields, with these types,
+  // and no extras. Tightening this makes Swagger docs precise AND lets the
+  // testing repo validate responses against it (schema-based contract tests).
+  required: ['id', 'name', 'price', 'description'],
+  additionalProperties: false,
   properties: {
     id: { type: 'integer', example: 1 },
     name: { type: 'string', example: 'Sauce Labs Backpack' },
     price: { type: 'number', example: 29.99 },
     description: { type: 'string', example: 'carry.allTheThings() ...' },
+  },
+}
+
+const loginResponse = {
+  type: 'object',
+  required: ['token', 'username'],
+  additionalProperties: false,
+  properties: {
+    token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+    username: { type: 'string', example: 'standard_user' },
   },
 }
 
@@ -36,7 +51,7 @@ export const openapiSpec = {
     securitySchemes: {
       bearerAuth: { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
     },
-    schemas: { Product: product, ProductInput: productInput },
+    schemas: { Product: product, ProductInput: productInput, LoginResponse: loginResponse },
   },
   paths: {
     '/health': {
@@ -66,7 +81,10 @@ export const openapiSpec = {
           },
         },
         responses: {
-          200: { description: 'A signed JWT' },
+          200: {
+            description: 'A signed JWT',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/LoginResponse' } } },
+          },
           401: { description: 'Invalid credentials' },
         },
       },
