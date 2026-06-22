@@ -1,21 +1,22 @@
-name: E2E (playwright-typescript)
+name: PR gate — API + smoke (playwright-typescript)
 
-# Cross-repo integration check: run the CONSUMER's full test suite
+# Fast cross-repo gate: on every PR, run the CONSUMER's API tests + @smoke E2E
 # (jesuslombardo/playwright-typescript) against THIS app's PR version.
-# An app change that breaks the tests is caught here, before merge.
+# Kept fast on purpose — the FULL cross-browser regression runs nightly in the
+# testing repo (.github/workflows/nightly.yml there). See that repo's ADR-007.
 
 on:
   pull_request:
   workflow_dispatch:
 
 jobs:
-  e2e:
-    name: API + E2E suite
+  gate:
+    name: API + smoke
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.61.0-jammy
       options: --user 1001
-    timeout-minutes: 20
+    timeout-minutes: 15
 
     steps:
       - name: Checkout testing framework (playwright-typescript @ main)
@@ -46,17 +47,17 @@ jobs:
         run: npm ci
         working-directory: tests/app
 
-      # webServer (in playwright.config.ts) starts `node app/server.js` — which
-      # is this PR's app — then API tests gate the E2E regression run.
-      - name: API tests (gate), then E2E — against this PR's app
-        run: npm run test:api && npm run test:regression
+      # webServer (in playwright.config.ts) starts `node app/server.js` — this
+      # PR's app — then API tests gate the @smoke critical-path E2E.
+      - name: API tests (gate), then @smoke E2E — against this PR's app
+        run: npm run test:api && npm run test:smoke
         working-directory: tests
 
       - name: Upload debug bundle on failure
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: e2e-debug
+          name: pr-gate-debug
           path: |
             tests/playwright-report/
             tests/test-results/
