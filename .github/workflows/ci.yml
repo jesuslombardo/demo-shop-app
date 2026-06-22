@@ -53,6 +53,11 @@ jobs:
     name: Integration tests
     needs: unit
     runs-on: ubuntu-latest
+    env:
+      # Real secret injected from repo Settings → Secrets. The app reads
+      # process.env.JWT_SECRET to sign/verify JWTs; falls back to its built-in
+      # default when unset (e.g. locally or on forks), so nothing breaks.
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -66,7 +71,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run integration tests (boots the app, hits it over HTTP)
+      - name: Confirm the JWT secret is wired (value stays masked)
+        run: echo "JWT_SECRET provided -> ${JWT_SECRET:+yes}"
+
+      - name: Run integration tests (boots the app with the injected secret)
         run: npm run test:integration
 
   publish-image:
