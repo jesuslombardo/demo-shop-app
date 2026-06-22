@@ -29,7 +29,10 @@ async function login() {
 test('GET /health returns ok', async () => {
   const res = await fetch(`${base}/health`)
   assert.equal(res.status, 200)
-  assert.deepEqual(await res.json(), { status: 'ok' })
+  const body = await res.json()
+  assert.equal(body.status, 'ok')
+  // commit is 'dev' outside Render; a post-deploy smoke checks it matches the SHA
+  assert.equal(typeof body.commit, 'string')
 })
 
 test('GET /api/products returns the seeded catalogue', async () => {

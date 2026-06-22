@@ -104,3 +104,75 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+  # ── Continuous Deployment: ship to a live environment, then VERIFY it. ──────
+  # On green main we trigger a Render deploy (gated by the whole test pipeline),
+  # then run a thin smoke against the LIVE url — the only thing that proves the
+  # DEPLOY itself works (real host, real env/secrets, real network), which the
+  # ephemeral CI app cannot. Full circle: test → build → deploy → verify.
+  # See ADR-010 in the playwright-typescript repo.
+  deploy:
+    name: Deploy to Render
+    needs: [integration, publish-image]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy (Deploy Hook)
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "::error::RENDER_DEPLOY_HOOK_URL secret is not set (repo Settings → Secrets)"
+            exit 1
+          fi
+          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL" > /dev/null
+          echo "Render deploy triggered for commit ${GITHUB_SHA}"
+
+  post-deploy-smoke:
+    name: Post-deploy smoke (live)
+    needs: deploy
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.0-jammy
+      options: --user 1001
+    steps:
+      # Wait until the live instance actually serves THIS commit, so we never
+      # smoke-test the old version still being swapped out. /health echoes the
+      # deployed SHA via RENDER_GIT_COMMIT.
+      - name: Wait for the new version to go live
+        run: |
+          url="${{ vars.RENDER_APP_URL }}"
+          want=$(echo "$GITHUB_SHA" | cut -c1-7)
+          echo "Waiting for $url/health to report commit $want ..."
+          for i in $(seq 1 60); do
+            got=$(curl -fsS "$url/health" 2>/dev/null | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p' | cut -c1-7) || got=""
+            echo "  attempt $i: live commit = '${got:-<down>}'"
+            if [ "$got" = "$want" ]; then echo "Live on $want"; exit 0; fi
+            sleep 10
+          done
+          echo "::error::Timed out waiting for the new version to go live"
+          exit 1
+
+      - name: Checkout testing repository
+        uses: actions/checkout@v6
+        with:
+          repository: jesuslombardo/playwright-typescript
+          path: tests
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Install testing dependencies
+        run: npm ci
+        working-directory: tests
+
+      - name: Run smoke against the LIVE deployment (chromium only)
+        run: npm run test:smoke -- --project=chromium
+        working-directory: tests
+        env:
+          BASE_URL: ${{ vars.RENDER_APP_URL }}

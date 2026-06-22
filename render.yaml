@@ -1,0 +1,23 @@
+# Render Blueprint — Infrastructure as Code.
+# Create the service ONCE: Render dashboard → New → Blueprint → pick this repo.
+# Render reads this file and provisions the web service below.
+#
+# autoDeploy:false → Render does NOT deploy on every push. Instead, our CI
+# triggers the deploy via a Deploy Hook (a secret URL) only after the whole
+# test pipeline is green — so the deploy is a *gated* pipeline stage.
+services:
+  - type: web
+    name: demo-shop-app
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start # node server.js — reads process.env.PORT (Render sets it)
+    healthCheckPath: /health
+    autoDeploy: false
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: JWT_SECRET
+        sync: false # set its value in the Render dashboard (secret, never in git)
+      # DB_PATH defaults to :memory: in code — fine on Render's ephemeral disk
+      # (the catalogue reseeds on every boot).
