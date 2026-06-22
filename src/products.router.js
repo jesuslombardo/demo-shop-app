@@ -1,8 +1,14 @@
 import { Router } from 'express'
 import { requireAuth } from './auth.js'
 
-function isValidProduct(body) {
-  return body && typeof body.name === 'string' && body.name.trim() !== '' && typeof body.price === 'number' && Number.isFinite(body.price)
+export function isValidProduct(body) {
+  return Boolean(
+    body &&
+      typeof body.name === 'string' &&
+      body.name.trim() !== '' &&
+      typeof body.price === 'number' &&
+      Number.isFinite(body.price)
+  )
 }
 
 /** Builds the /api/products router. Reads are public; writes require a token. */

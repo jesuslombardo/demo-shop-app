@@ -70,9 +70,20 @@ docker run --rm -p 3000:3000 ghcr.io/jesuslombardo/demo-shop-app:latest
 
 ## Tests & CI
 
-- `npm test` — Node's built-in test runner hits the app over HTTP (health, auth, CRUD).
-- `npm run lint` — ESLint (flat config).
-- **CI** (`.github/workflows/ci.yml`): `lint → test → build & publish image to GHCR` (on `main`).
+Two tiers, run with Node's built-in test runner (`node --test`, no extra deps):
+
+- `npm run test:unit` — **unit tests** of pure functions (`authenticate`, `requireAuth`/JWT, `isValidProduct`); no HTTP, no DB.
+- `npm run test:integration` — **integration tests** that boot the app and exercise it over HTTP (health, auth, CRUD round-trip).
+- `npm test` — both. `npm run lint` — ESLint (flat config).
+
+**CI** (`.github/workflows/ci.yml`) runs a mini-pyramid, cheap-first / fail-fast:
+
+```
+lint → unit → integration → build & publish image to GHCR (on main)
+```
 
 The published image is consumed by the `playwright-typescript` pipeline, which spins it up
-ephemerally to run API tests first, then E2E — the testing pyramid in action.
+ephemerally to run API tests first, then E2E — the testing pyramid across both repos.
+
+There's also a separate cross-repo check (`.github/workflows/e2e.yml`): every PR here runs that
+framework's **API + @smoke** suite against the PR's app version, as a required gate.

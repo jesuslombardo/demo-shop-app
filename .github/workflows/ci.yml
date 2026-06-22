@@ -29,7 +29,7 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-  test:
+  unit:
     name: Unit tests
     needs: quality
     runs-on: ubuntu-latest
@@ -46,12 +46,32 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run unit/integration tests
-        run: npm test
+      - name: Run unit tests (pure functions, no I/O)
+        run: npm run test:unit
+
+  integration:
+    name: Integration tests
+    needs: unit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests (boots the app, hits it over HTTP)
+        run: npm run test:integration
 
   publish-image:
     name: Build & publish image (GHCR)
-    needs: test
+    needs: integration
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
