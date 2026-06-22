@@ -1,0 +1,63 @@
+name: E2E (playwright-typescript)
+
+# Cross-repo integration check: run the CONSUMER's full test suite
+# (jesuslombardo/playwright-typescript) against THIS app's PR version.
+# An app change that breaks the tests is caught here, before merge.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    name: API + E2E suite
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.0-jammy
+      options: --user 1001
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout testing framework (playwright-typescript @ main)
+        uses: actions/checkout@v6
+        with:
+          repository: jesuslombardo/playwright-typescript
+          path: tests
+
+      - name: Checkout this app (PR version) into the framework's ./app
+        uses: actions/checkout@v6
+        with:
+          path: tests/app
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            tests/package-lock.json
+            tests/app/package-lock.json
+
+      - name: Install framework dependencies
+        run: npm ci
+        working-directory: tests
+
+      - name: Install app dependencies
+        run: npm ci
+        working-directory: tests/app
+
+      # webServer (in playwright.config.ts) starts `node app/server.js` — which
+      # is this PR's app — then API tests gate the E2E regression run.
+      - name: API tests (gate), then E2E — against this PR's app
+        run: npm run test:api && npm run test:regression
+        working-directory: tests
+
+      - name: Upload debug bundle on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-debug
+          path: |
+            tests/playwright-report/
+            tests/test-results/
+          retention-days: 14
