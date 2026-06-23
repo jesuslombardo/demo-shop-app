@@ -15,6 +15,7 @@
     "test": "node --test",
     "test:unit": "node --test test/unit/*.test.js",
     "test:integration": "node --test test/integration/*.test.js",
+    "test:contract": "node --test contract/*.pact.js",
     "lint": "eslint ."
   },
   "engines": {
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@pact-foundation/pact": "^16.5.0",
     "eslint": "^10.5.0"
   }
 }
