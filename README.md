@@ -18,6 +18,12 @@ tests running against the **same application**, with the API layer gating the sl
 | Docs     | **Swagger UI** (`swagger-ui-express`)   | Browsable, self-documenting contract                   |
 | UI       | **Vanilla HTML/JS** served by Express   | No framework, no build step → starts in ~1s, easy E2E  |
 
+The UI is lightly **responsive**: below `600px` the product grid and the
+add-product form stack into a single column, and the top-bar actions collapse
+behind a ☰ hamburger menu (`data-test="menu-toggle"`). This gives the
+`playwright-typescript` framework a real surface for **mobile-viewport tests**.
+See [`CHANGELOG.md`](CHANGELOG.md).
+
 ## Endpoints
 
 | Method   | Path                 | Auth   | Description                          |

@@ -9,7 +9,20 @@
   <body>
     <header class="topbar">
       <h1 data-test="title" id="title">Products</h1>
-      <button data-test="logout" id="logout" class="ghost">Logout</button>
+      <button
+        data-test="menu-toggle"
+        id="menu-toggle"
+        class="menu-toggle ghost"
+        type="button"
+        aria-label="Menu"
+        aria-controls="topbar-nav"
+        aria-expanded="false"
+      >
+        ☰
+      </button>
+      <nav data-test="topbar-nav" id="topbar-nav" class="topbar-nav">
+        <button data-test="logout" id="logout" class="ghost">Logout</button>
+      </nav>
     </header>
 
     <main>
