@@ -136,3 +136,42 @@ main {
   font-size: 0.85rem;
   min-height: 3.5rem;
 }
+
+/* --- responsive (mobile ≤ 600px) --- */
+.menu-toggle {
+  display: none; /* desktop: no hamburger, the nav is always shown */
+}
+
+@media (max-width: 600px) {
+  .topbar {
+    position: relative; /* anchor for the dropdown nav */
+  }
+
+  .menu-toggle {
+    display: block; /* mobile: reveal the hamburger button */
+    font-size: 1.25rem;
+    line-height: 1;
+    padding: 0.3rem 0.6rem;
+    color: #fff;
+    border-color: #fff;
+  }
+
+  .topbar-nav {
+    display: none; /* mobile: actions are hidden behind the hamburger */
+    position: absolute;
+    top: 100%;
+    right: 0.75rem;
+    background: var(--ink);
+    padding: 0.5rem;
+    border-radius: 8px;
+    z-index: 10;
+  }
+
+  .topbar-nav.open {
+    display: block; /* revealed when the hamburger is tapped */
+  }
+
+  .add-form form {
+    grid-template-columns: 1fr; /* stack the 4-up form into one column */
+  }
+}

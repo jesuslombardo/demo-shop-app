@@ -14,6 +14,14 @@ document.getElementById('logout').addEventListener('click', () => {
   window.location.assign('/')
 })
 
+// Mobile: the topbar collapses its actions behind a hamburger button.
+const menuToggle = document.getElementById('menu-toggle')
+const topbarNav = document.getElementById('topbar-nav')
+menuToggle.addEventListener('click', () => {
+  const open = topbarNav.classList.toggle('open')
+  menuToggle.setAttribute('aria-expanded', String(open))
+})
+
 function authHeaders() {
   return { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
 }
