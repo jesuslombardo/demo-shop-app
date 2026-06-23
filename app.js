@@ -9,22 +9,24 @@ import { openapiSpec } from './src/openapi.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-/**
- * Build the Express app. Accepts an optional db so tests can inject their own
- * isolated instance; defaults to a freshly seeded database.
+/*
+ * The app is built from small "mount" helpers, each owning one slice of the API.
+ * - createApp() mounts ALL of them → the MONOLITH (one process, default).
+ * - The per-service entrypoints in services/ mount only their slice → MICROSERVICES.
+ * Same business logic either way; only the composition differs. This is the
+ * "modular monolith" that makes the auth split additive instead of a rewrite.
  */
-export function createApp(db = createDb()) {
-  const app = express()
-  app.use(express.json())
 
-  // --- system ---
-  // `commit` lets a post-deploy smoke verify the LIVE instance is the version we
-  // just shipped (Render injects RENDER_GIT_COMMIT). 'dev' locally / in CI.
+/** `commit` lets a post-deploy smoke verify the LIVE instance is the version we
+ * just shipped (Render injects RENDER_GIT_COMMIT). 'dev' locally / in CI. */
+export function mountSystem(app) {
   app.get('/health', (req, res) =>
     res.json({ status: 'ok', commit: process.env.RENDER_GIT_COMMIT || 'dev' })
   )
+}
 
-  // --- auth ---
+/** The auth slice: issues a JWT for valid credentials. Owned by auth-service. */
+export function mountAuth(app) {
   app.post('/api/login', (req, res) => {
     const { username, password } = req.body ?? {}
     if (!authenticate(username, password)) {
@@ -32,16 +34,38 @@ export function createApp(db = createDb()) {
     }
     res.json({ token: issueToken(username), username })
   })
+}
 
-  // --- products ---
+/** The products slice (CRUD). Owned by products-service. Needs the db. */
+export function mountProducts(app, db) {
   app.use('/api/products', productsRouter(db))
+}
 
-  // --- docs ---
+/** OpenAPI spec + Swagger UI. Travels with products-service (it documents the API). */
+export function mountDocs(app) {
   app.get('/api/openapi.json', (req, res) => res.json(openapiSpec))
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec))
+}
 
-  // --- static UI (served last so /api/* wins) ---
+/** The vanilla UI. Served last so /api/* wins. Travels with products-service. */
+export function mountStatic(app) {
   app.use(express.static(path.join(__dirname, 'public')))
+}
+
+/**
+ * Build the MONOLITH: one Express app that mounts every slice. Accepts an
+ * optional db so tests can inject their own isolated instance; defaults to a
+ * freshly seeded database. Behaviour is identical to before the split.
+ */
+export function createApp(db = createDb()) {
+  const app = express()
+  app.use(express.json())
+
+  mountSystem(app)
+  mountAuth(app)
+  mountProducts(app, db)
+  mountDocs(app)
+  mountStatic(app) // last so /api/* wins
 
   return app
 }

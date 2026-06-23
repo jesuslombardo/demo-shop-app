@@ -1,0 +1,41 @@
+# Microservices mode — OPTIONAL / didactic. The monolith (`npm start`) is the
+# default and stays untouched. This composes the SAME image three ways:
+#   gateway  (3000) → routes /api/login to auth, everything else to products
+#   auth     (3001) → login + JWT signing
+#   products (3002) → catalogue (its own in-memory db), docs, static UI
+#
+# All three share JWT_SECRET so products verifies auth's tokens LOCALLY (HS256)
+# — no per-request call to auth. Point the test suite at it with:
+#   BASE_URL=http://localhost:3000
+services:
+  auth:
+    build: .
+    command: node services/auth/index.js
+    environment:
+      PORT: 3001
+      JWT_SECRET: ${JWT_SECRET:-demo-shop-dev-secret}
+    expose:
+      - '3001'
+
+  products:
+    build: .
+    command: node services/products/index.js
+    environment:
+      PORT: 3002
+      DB_PATH: ':memory:'
+      JWT_SECRET: ${JWT_SECRET:-demo-shop-dev-secret}
+    expose:
+      - '3002'
+
+  gateway:
+    build: .
+    command: node services/gateway/index.js
+    environment:
+      PORT: 3000
+      AUTH_URL: http://auth:3001
+      PRODUCTS_URL: http://products:3002
+    ports:
+      - '3000:3000'
+    depends_on:
+      - auth
+      - products

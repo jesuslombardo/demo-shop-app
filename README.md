@@ -58,6 +58,35 @@ docker run --rm -p 3000:3000 demo-shop-app
 docker run --rm -p 3000:3000 ghcr.io/jesuslombardo/demo-shop-app:latest
 ```
 
+### Microservices mode (optional, didactic)
+
+The same app can run **split into services** instead of as one process — a teaching
+vehicle for the framework's microservices-testing module (contract testing, etc.).
+The monolith above is the default and is unaffected; this is purely additive.
+
+```bash
+docker compose up --build      # or: npm run micro
+```
+
+That starts three containers from the **same image**, each mounting only its slice:
+
+| Service           | Port   | Owns                                   |
+| ----------------- | ------ | -------------------------------------- |
+| `gateway`         | `3000` | Front door: routes `/api/login`→auth, everything else→products |
+| `auth-service`    | `3001` | `POST /api/login` + JWT signing        |
+| `products-service`| `3002` | Catalogue (own DB), Swagger docs, static UI |
+
+Key points:
+
+- **Same code, two compositions.** `app.js` exposes small `mount*()` helpers;
+  `createApp()` mounts them all (monolith), each service mounts only its own.
+- **The gateway is mandatory, not optional:** the UI calls same-origin paths
+  (`/api/login`, `/api/products`), so a single front door must route them.
+- **Cross-service trust is local:** `auth` signs JWTs with `JWT_SECRET`; `products`
+  verifies them with the same secret (HS256) — no per-request call to `auth`.
+- **Same surface:** the gateway exposes the identical API at `http://localhost:3000`,
+  so the whole test suite runs against it unchanged (`BASE_URL=http://localhost:3000`).
+
 ## Configuration
 
 | Env var         | Default              | Purpose                                        |

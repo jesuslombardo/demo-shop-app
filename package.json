@@ -7,6 +7,11 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "start:auth": "node services/auth/index.js",
+    "start:products": "node services/products/index.js",
+    "start:gateway": "node services/gateway/index.js",
+    "micro": "docker compose up --build",
+    "micro:down": "docker compose down",
     "test": "node --test",
     "test:unit": "node --test test/unit/*.test.js",
     "test:integration": "node --test test/integration/*.test.js",
@@ -19,6 +24,7 @@
   "dependencies": {
     "better-sqlite3": "^12.11.1",
     "express": "^5.2.1",
+    "http-proxy-middleware": "^3.0.7",
     "jsonwebtoken": "^9.0.3",
     "swagger-ui-express": "^5.0.1"
   },
