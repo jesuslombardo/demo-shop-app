@@ -141,18 +141,30 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.61.0-jammy
       options: --user 1001
     steps:
-      - name: Wait for staging to serve this commit
+      - name: Wait for staging to be live & stable
+        # Readiness must check the routes the smoke actually uses, not just
+        # /health: a free-tier instance serves /health before the static UI and
+        # API are ready right after a deploy swap. Require the deployed commit AND
+        # / AND /api/products to be 200 for 3 consecutive checks before smoking.
         run: |
           url="${{ vars.RENDER_STAGING_URL }}"
           want=$(echo "$GITHUB_SHA" | cut -c1-7)
-          echo "Waiting for $url/health to report commit $want ..."
+          echo "Waiting for $url to serve $want on /health + / + /api/products ..."
+          ok=0
           for i in $(seq 1 60); do
-            got=$(curl -fsS "$url/health" 2>/dev/null | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p' | cut -c1-7) || got=""
-            echo "  attempt $i: live commit = '${got:-<down>}'"
-            if [ "$got" = "$want" ]; then echo "Live on $want"; exit 0; fi
+            commit=$(curl -fsS "$url/health" 2>/dev/null | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p' | cut -c1-7)
+            root=$(curl -sS -o /dev/null -w '%{http_code}' "$url/" 2>/dev/null || echo 000)
+            prods=$(curl -sS -o /dev/null -w '%{http_code}' "$url/api/products" 2>/dev/null || echo 000)
+            echo "  attempt $i: commit=${commit:-<down>}/$want root=$root products=$prods (streak=$ok)"
+            if [ "$commit" = "$want" ] && [ "$root" = "200" ] && [ "$prods" = "200" ]; then
+              ok=$((ok + 1))
+              if [ "$ok" -ge 3 ]; then echo "Live & stable on $want"; exit 0; fi
+            else
+              ok=0
+            fi
             sleep 10
           done
-          echo "::error::Timed out waiting for staging to go live"; exit 1
+          echo "::error::Timed out waiting for staging to be live & stable"; exit 1
 
       - name: Checkout testing repository
         uses: actions/checkout@v6
@@ -206,18 +218,28 @@ jobs:
       image: mcr.microsoft.com/playwright:v1.61.0-jammy
       options: --user 1001
     steps:
-      - name: Wait for production to serve this commit
+      - name: Wait for production to be live & stable
+        # Same robust readiness as staging: deployed commit AND / AND
+        # /api/products must be 200 for 3 consecutive checks before smoking.
         run: |
           url="${{ vars.RENDER_APP_URL }}"
           want=$(echo "$GITHUB_SHA" | cut -c1-7)
-          echo "Waiting for $url/health to report commit $want ..."
+          echo "Waiting for $url to serve $want on /health + / + /api/products ..."
+          ok=0
           for i in $(seq 1 60); do
-            got=$(curl -fsS "$url/health" 2>/dev/null | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p' | cut -c1-7) || got=""
-            echo "  attempt $i: live commit = '${got:-<down>}'"
-            if [ "$got" = "$want" ]; then echo "Live on $want"; exit 0; fi
+            commit=$(curl -fsS "$url/health" 2>/dev/null | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p' | cut -c1-7)
+            root=$(curl -sS -o /dev/null -w '%{http_code}' "$url/" 2>/dev/null || echo 000)
+            prods=$(curl -sS -o /dev/null -w '%{http_code}' "$url/api/products" 2>/dev/null || echo 000)
+            echo "  attempt $i: commit=${commit:-<down>}/$want root=$root products=$prods (streak=$ok)"
+            if [ "$commit" = "$want" ] && [ "$root" = "200" ] && [ "$prods" = "200" ]; then
+              ok=$((ok + 1))
+              if [ "$ok" -ge 3 ]; then echo "Live & stable on $want"; exit 0; fi
+            else
+              ok=0
+            fi
             sleep 10
           done
-          echo "::error::Timed out waiting for production to go live"; exit 1
+          echo "::error::Timed out waiting for production to be live & stable"; exit 1
 
       - name: Checkout testing repository
         uses: actions/checkout@v6
