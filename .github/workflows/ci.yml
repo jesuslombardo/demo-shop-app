@@ -77,6 +77,42 @@ jobs:
       - name: Run integration tests (boots the app with the injected secret)
         run: npm run test:integration
 
+  # ── Consumer-driven contract verification (Pact) ────────────────────────────
+  # auth-service is the PROVIDER. We pull the pact published by the `shop-web`
+  # consumer (in the playwright-typescript repo) and verify auth still satisfies
+  # it — if the login response drifts (renames `token`, changes a status), this
+  # FAILS. The contract is owned by the consumer, so we check that repo out for
+  # it. DIDACTIC — intentionally NOT a required check. See ADR-017 (testing repo).
+  contract-provider:
+    name: Contract (Pact provider verification)
+    needs: quality
+    runs-on: ubuntu-latest
+    env:
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Checkout consumer repo for the published pact
+        uses: actions/checkout@v6
+        with:
+          repository: jesuslombardo/playwright-typescript
+          path: consumer
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify auth-service against the shop-web contract
+        env:
+          PACT_DIR: ${{ github.workspace }}/consumer/pacts
+        run: npm run test:contract
+
   publish-image:
     name: Build & publish image (GHCR)
     needs: integration

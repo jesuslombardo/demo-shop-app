@@ -110,6 +110,7 @@ Two tiers, run with Node's built-in test runner (`node --test`, no extra deps):
 - `npm run test:unit` — **unit tests** of pure functions (`authenticate`, `requireAuth`/JWT, `isValidProduct`); no HTTP, no DB.
 - `npm run test:integration` — **integration tests** that boot the app and exercise it over HTTP (health, auth, CRUD round-trip).
 - `npm test` — both. `npm run lint` — ESLint (flat config).
+- `npm run test:contract` — **Pact provider verification**: replays the `shop-web` consumer's contract (owned by the `playwright-typescript` repo) against auth-service. Set `PACT_DIR` to that repo's `pacts/` folder. If the login response drifts (e.g. renames `token`), it **fails the build**. Runs as a non-required CI job (`Contract (Pact provider verification)`).
 
 **CI** (`.github/workflows/ci.yml`) runs a mini-pyramid, cheap-first / fail-fast:
 
