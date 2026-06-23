@@ -105,44 +105,45 @@ jobs:
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
 
-  # ── Continuous Deployment: ship to a live environment, then VERIFY it. ──────
-  # On green main we trigger a Render deploy (gated by the whole test pipeline),
-  # then run a thin smoke against the LIVE url — the only thing that proves the
-  # DEPLOY itself works (real host, real env/secrets, real network), which the
-  # ephemeral CI app cannot. Full circle: test → build → deploy → verify.
-  # See ADR-010 in the playwright-typescript repo.
-  deploy:
-    name: Deploy to Render
+  # ── Continuous Deployment: promote through environments ─────────────────────
+  # On green main: deploy to STAGING → smoke staging → (manual approval gate) →
+  # deploy to PRODUCTION → smoke production. The gate is a GitHub Environment
+  # protection rule (`environment: production` has a required reviewer), so the
+  # production deploy PAUSES until a human approves. A thin smoke against each
+  # live URL proves the deploy itself works. See ADR-012 in the testing repo.
+
+  deploy-staging:
+    name: Deploy to staging
     needs: [integration, publish-image]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: ${{ vars.RENDER_STAGING_URL }}
     steps:
-      - name: Trigger Render deploy (Deploy Hook)
+      - name: Trigger Render deploy (staging Deploy Hook)
         env:
-          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          HOOK: ${{ secrets.RENDER_STAGING_DEPLOY_HOOK_URL }}
         run: |
-          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
-            echo "::error::RENDER_DEPLOY_HOOK_URL secret is not set (repo Settings → Secrets)"
+          if [ -z "$HOOK" ]; then
+            echo "::error::RENDER_STAGING_DEPLOY_HOOK_URL secret is not set"
             exit 1
           fi
-          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL" > /dev/null
-          echo "Render deploy triggered for commit ${GITHUB_SHA}"
+          curl -fsS -X POST "$HOOK" > /dev/null
+          echo "Staging deploy triggered for commit ${GITHUB_SHA}"
 
-  post-deploy-smoke:
-    name: Post-deploy smoke (live)
-    needs: deploy
+  smoke-staging:
+    name: Smoke (staging)
+    needs: deploy-staging
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.61.0-jammy
       options: --user 1001
     steps:
-      # Wait until the live instance actually serves THIS commit, so we never
-      # smoke-test the old version still being swapped out. /health echoes the
-      # deployed SHA via RENDER_GIT_COMMIT.
-      - name: Wait for the new version to go live
+      - name: Wait for staging to serve this commit
         run: |
-          url="${{ vars.RENDER_APP_URL }}"
+          url="${{ vars.RENDER_STAGING_URL }}"
           want=$(echo "$GITHUB_SHA" | cut -c1-7)
           echo "Waiting for $url/health to report commit $want ..."
           for i in $(seq 1 60); do
@@ -151,8 +152,7 @@ jobs:
             if [ "$got" = "$want" ]; then echo "Live on $want"; exit 0; fi
             sleep 10
           done
-          echo "::error::Timed out waiting for the new version to go live"
-          exit 1
+          echo "::error::Timed out waiting for staging to go live"; exit 1
 
       - name: Checkout testing repository
         uses: actions/checkout@v6
@@ -171,7 +171,72 @@ jobs:
         run: npm ci
         working-directory: tests
 
-      - name: Run smoke against the LIVE deployment (chromium only)
+      - name: Smoke against staging (chromium only)
+        run: npm run test:smoke -- --project=chromium
+        working-directory: tests
+        env:
+          BASE_URL: ${{ vars.RENDER_STAGING_URL }}
+
+  deploy-production:
+    name: Deploy to production
+    needs: smoke-staging # only promote a build that passed staging
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: # ← required reviewer here = the manual approval GATE
+      name: production
+      url: ${{ vars.RENDER_APP_URL }}
+    steps:
+      - name: Trigger Render deploy (production Deploy Hook)
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::error::RENDER_DEPLOY_HOOK_URL secret is not set"
+            exit 1
+          fi
+          curl -fsS -X POST "$HOOK" > /dev/null
+          echo "Production deploy triggered for commit ${GITHUB_SHA}"
+
+  smoke-production:
+    name: Smoke (production)
+    needs: deploy-production
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.0-jammy
+      options: --user 1001
+    steps:
+      - name: Wait for production to serve this commit
+        run: |
+          url="${{ vars.RENDER_APP_URL }}"
+          want=$(echo "$GITHUB_SHA" | cut -c1-7)
+          echo "Waiting for $url/health to report commit $want ..."
+          for i in $(seq 1 60); do
+            got=$(curl -fsS "$url/health" 2>/dev/null | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p' | cut -c1-7) || got=""
+            echo "  attempt $i: live commit = '${got:-<down>}'"
+            if [ "$got" = "$want" ]; then echo "Live on $want"; exit 0; fi
+            sleep 10
+          done
+          echo "::error::Timed out waiting for production to go live"; exit 1
+
+      - name: Checkout testing repository
+        uses: actions/checkout@v6
+        with:
+          repository: jesuslombardo/playwright-typescript
+          path: tests
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tests/package-lock.json
+
+      - name: Install testing dependencies
+        run: npm ci
+        working-directory: tests
+
+      - name: Smoke against production (chromium only)
         run: npm run test:smoke -- --project=chromium
         working-directory: tests
         env:
