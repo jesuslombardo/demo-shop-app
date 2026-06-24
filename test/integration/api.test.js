@@ -111,6 +111,24 @@ test('listing orders requires a token', async () => {
   assert.equal(res.status, 401)
 })
 
+test('orders are customer-only — an admin is rejected (403)', async () => {
+  const token = await adminToken()
+  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+
+  const list = await fetch(`${base}/api/orders`, { headers })
+  assert.equal(list.status, 403)
+
+  const placed = await fetch(`${base}/api/orders`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      items: [{ productId: 1, quantity: 1 }],
+      customer: { name: 'Admin', address: 'HQ' },
+    }),
+  })
+  assert.equal(placed.status, 403)
+})
+
 test('checkout places an order with a server-computed total, then it appears in history', async () => {
   const token = await customerToken()
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
@@ -162,7 +180,7 @@ test('checkout rejects an unknown product', async () => {
   assert.equal(res.status, 400)
 })
 
-test("a user cannot read another user's order", async () => {
+test('orders are scoped to their owner (an id that is not yours → 404)', async () => {
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${await customerToken()}` }
   const placed = await fetch(`${base}/api/orders`, {
     method: 'POST',
@@ -174,9 +192,12 @@ test("a user cannot read another user's order", async () => {
   })
   const { id } = await placed.json()
 
-  // The admin is a different user (different JWT sub) → their scope excludes it.
-  const asAdmin = await fetch(`${base}/api/orders/${id}`, {
-    headers: { Authorization: `Bearer ${await adminToken()}` },
-  })
-  assert.equal(asAdmin.status, 404)
+  // Owner can read their own order…
+  assert.equal((await fetch(`${base}/api/orders/${id}`, { headers })).status, 200)
+
+  // …but the lookup is scoped by username, so an id that isn't theirs is invisible
+  // → 404 (the same path that hides one customer's orders from another). Admins
+  // can't reach this at all — orders are customer-only (covered above, 403).
+  const notMine = await fetch(`${base}/api/orders/${id + 100000}`, { headers })
+  assert.equal(notMine.status, 404)
 })

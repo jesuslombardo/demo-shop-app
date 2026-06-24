@@ -3,7 +3,7 @@
  * order from /api/orders/:id (the server only returns orders owned by the
  * signed-in user). Doubles as the "view past order" target from the history.
  */
-Session.initPage()
+Session.initPage({ customerOnly: true })
 
 const el = document.getElementById('order-confirmation')
 

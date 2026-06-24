@@ -69,3 +69,17 @@ export function requireAdmin(req, res, next) {
     next()
   })
 }
+
+/**
+ * Express middleware: a valid token AND the 'customer' role. The mirror of
+ * requireAdmin — gates the shopping flows (cart checkout + order history) so an
+ * admin (a catalogue manager, not a shopper) is rejected with 403.
+ */
+export function requireCustomer(req, res, next) {
+  requireAuth(req, res, () => {
+    if (req.user?.role !== 'customer') {
+      return res.status(403).json({ error: 'This action requires the customer role' })
+    }
+    next()
+  })
+}

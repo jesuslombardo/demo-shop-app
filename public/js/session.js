@@ -99,10 +99,20 @@
     /**
      * Guard the page and wire the shared topbar. Call once on every signed-in
      * page. Each control is wired only if present, so pages can omit any of it.
+     *
+     * Pass `{ customerOnly: true }` on the shopping pages (cart/checkout/orders/
+     * confirmation): an admin manages the catalogue and never shops, so they are
+     * bounced back to the catalogue. On every page the admin's cart/orders links
+     * are hidden too — those flows aren't theirs.
      */
-    initPage() {
+    initPage({ customerOnly = false } = {}) {
       const token = Session.requireLogin()
       if (!token) return null
+
+      if (customerOnly && Session.isAdmin()) {
+        window.location.replace('/products.html')
+        return null
+      }
 
       const logout = document.getElementById('logout')
       if (logout) logout.addEventListener('click', Session.logout)
@@ -114,6 +124,13 @@
           const open = topbarNav.classList.toggle('open')
           menuToggle.setAttribute('aria-expanded', String(open))
         })
+      }
+
+      // Shopping is a customer concern — hide the cart/orders links from admins.
+      if (Session.isAdmin()) {
+        document
+          .querySelectorAll('[data-test="cart-link"], [data-test="orders-link"]')
+          .forEach((el) => (el.hidden = true))
       }
 
       Session.updateCartBadge()

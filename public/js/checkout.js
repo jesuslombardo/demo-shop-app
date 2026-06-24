@@ -4,7 +4,7 @@
  * the authoritative total, so the summary here is display-only. On success the
  * local cart is cleared and we land on the confirmation page.
  */
-Session.initPage()
+Session.initPage({ customerOnly: true })
 
 const grid = document.getElementById('checkout-grid')
 const emptyEl = document.getElementById('cart-empty')

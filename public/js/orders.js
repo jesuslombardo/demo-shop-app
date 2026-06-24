@@ -3,7 +3,7 @@
  * GET /api/orders. Each row links to the confirmation page, which reuses the
  * same endpoint to show the full order detail.
  */
-Session.initPage()
+Session.initPage({ customerOnly: true })
 
 const listEl = document.getElementById('orders-list')
 const emptyEl = document.getElementById('orders-empty')

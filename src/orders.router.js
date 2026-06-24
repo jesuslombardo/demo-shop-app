@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { requireAuth } from './auth.js'
+import { requireCustomer } from './auth.js'
 
 /**
  * Shape check for a checkout payload. A valid order has at least one line item
@@ -80,18 +80,18 @@ export function ordersRouter(db) {
     return info.lastInsertRowid
   })
 
-  router.get('/', requireAuth, (req, res) => {
+  router.get('/', requireCustomer, (req, res) => {
     const rows = listOrders.all(req.user.sub)
     res.json(rows.map((row) => toOrder(row, findItems.all(row.id))))
   })
 
-  router.get('/:id', requireAuth, (req, res) => {
+  router.get('/:id', requireCustomer, (req, res) => {
     const row = findOrder.get(Number(req.params.id), req.user.sub)
     if (!row) return res.status(404).json({ error: 'Order not found' })
     res.json(toOrder(row, findItems.all(row.id)))
   })
 
-  router.post('/', requireAuth, (req, res) => {
+  router.post('/', requireCustomer, (req, res) => {
     if (!isValidOrder(req.body)) {
       return res
         .status(400)
