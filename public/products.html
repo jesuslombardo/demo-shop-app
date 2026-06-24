@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Demo Shop — Products</title>
     <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   </head>
   <body>
     <header class="topbar">
@@ -21,12 +22,16 @@
         ☰
       </button>
       <nav data-test="topbar-nav" id="topbar-nav" class="topbar-nav">
+        <span data-test="role-badge" id="role-badge" class="badge" hidden></span>
+        <a data-test="cart-link" href="/cart.html" class="navlink">🛒 Cart (<span id="cart-count">0</span>)</a>
+        <a data-test="orders-link" href="/orders.html" class="navlink">📦 My orders</a>
         <button data-test="logout" id="logout" class="ghost">Logout</button>
       </nav>
     </header>
 
     <main>
-      <section class="card add-form">
+      <!-- Admin only: catalogue management. Revealed by products.js for admins. -->
+      <section class="card add-form" data-test="admin-tools" id="admin-tools" hidden>
         <h2>Add product</h2>
         <form id="add-form" novalidate>
           <input data-test="new-product-name" id="new-product-name" placeholder="Name" />
@@ -37,9 +42,16 @@
         <p data-test="add-error" id="add-error" class="error" hidden></p>
       </section>
 
+      <!-- Customer only: a hint that this is the storefront. Revealed for customers. -->
+      <p data-test="shop-hint" id="shop-hint" class="shop-hint" hidden>
+        Browse the catalogue and add items to your cart, then head to checkout.
+      </p>
+
       <section id="product-list" data-test="product-list" class="grid"></section>
     </main>
 
+    <script src="/js/cart.js"></script>
+    <script src="/js/session.js"></script>
     <script src="/js/products.js"></script>
   </body>
 </html>

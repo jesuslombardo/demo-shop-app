@@ -96,6 +96,34 @@ input {
   font-size: 1.25rem;
 }
 
+/* Desktop: the topbar actions sit inline. Mobile collapses them (see @media). */
+.topbar-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.navlink {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.navlink:hover {
+  text-decoration: underline;
+}
+
+.badge {
+  background: var(--accent);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
 main {
   max-width: 960px;
   margin: 1.5rem auto;
@@ -139,6 +167,11 @@ main {
   min-height: 3.5rem;
 }
 
+.product .actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 /* --- responsive (mobile ≤ 600px) --- */
 .menu-toggle {
   display: none; /* desktop: no hamburger, the nav is always shown */
@@ -176,4 +209,114 @@ main {
   .add-form form {
     grid-template-columns: 1fr; /* stack the 4-up form into one column */
   }
+
+  .checkout-grid {
+    grid-template-columns: 1fr; /* stack the form above the summary */
+  }
+}
+
+/* --- storefront / cart / checkout / orders --- */
+.shop-hint,
+.empty {
+  color: var(--muted);
+  margin: 0 0 1.25rem;
+}
+
+/* Quantity input sits inline with the action buttons, not full-width. */
+.qty {
+  width: 4.5rem;
+  margin-bottom: 0;
+}
+
+/* --- cart --- */
+.cart-items {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.cart-line .actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.cart-line .line-total {
+  font-weight: 700;
+  margin: 0;
+  margin-left: auto; /* push the total + remove to the right */
+}
+
+.cart-summary .summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.35rem 0;
+}
+
+.cart-summary .summary-row.total {
+  border-top: 1px solid #e3e7ec;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.cart-summary button {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+/* --- checkout --- */
+.checkout-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+/* --- confirmation --- */
+.order-confirmation .thanks {
+  color: var(--price);
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+.order-confirmation .summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.35rem 0;
+}
+
+.order-confirmation .summary-row.total {
+  border-top: 1px solid #e3e7ec;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  font-weight: 700;
+}
+
+/* --- order history --- */
+.orders-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.order-row {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.order-row:hover {
+  border-color: var(--ink);
+}
+
+.order-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.order-row-head h3 {
+  margin: 0;
 }

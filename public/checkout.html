@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo Shop — Checkout</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1 data-test="title" id="title">Checkout</h1>
+      <button
+        data-test="menu-toggle"
+        id="menu-toggle"
+        class="menu-toggle ghost"
+        type="button"
+        aria-label="Menu"
+        aria-controls="topbar-nav"
+        aria-expanded="false"
+      >
+        ☰
+      </button>
+      <nav data-test="topbar-nav" id="topbar-nav" class="topbar-nav">
+        <a data-test="cart-link" href="/cart.html" class="navlink">← Cart (<span id="cart-count">0</span>)</a>
+        <a data-test="orders-link" href="/orders.html" class="navlink">📦 My orders</a>
+        <button data-test="logout" id="logout" class="ghost">Logout</button>
+      </nav>
+    </header>
+
+    <main>
+      <p data-test="cart-empty" id="cart-empty" class="empty" hidden>
+        Your cart is empty. <a href="/products.html">Browse the catalogue →</a>
+      </p>
+
+      <div class="checkout-grid" id="checkout-grid" hidden>
+        <section class="card">
+          <h2>Shipping details</h2>
+          <form id="checkout-form" novalidate>
+            <input data-test="checkout-name" id="checkout-name" placeholder="Full name" autocomplete="name" />
+            <input data-test="checkout-address" id="checkout-address" placeholder="Address" autocomplete="street-address" />
+            <input data-test="checkout-city" id="checkout-city" placeholder="City (optional)" autocomplete="address-level2" />
+            <input data-test="checkout-zip" id="checkout-zip" placeholder="ZIP / Postal code (optional)" autocomplete="postal-code" />
+            <button data-test="place-order-button" id="place-order-button" type="submit">Place order</button>
+            <p data-test="checkout-error" id="checkout-error" class="error" hidden></p>
+          </form>
+        </section>
+
+        <section class="card cart-summary">
+          <h2>Order summary</h2>
+          <div data-test="summary-lines" id="summary-lines"></div>
+          <div class="summary-row total">
+            <span>Total</span>
+            <span data-test="summary-total" id="summary-total">$0.00</span>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script src="/js/cart.js"></script>
+    <script src="/js/session.js"></script>
+    <script src="/js/checkout.js"></script>
+  </body>
+</html>

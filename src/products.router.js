@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { requireAuth } from './auth.js'
+import { requireAdmin } from './auth.js'
 
 export function isValidProduct(body) {
   return Boolean(
@@ -11,7 +11,7 @@ export function isValidProduct(body) {
   )
 }
 
-/** Builds the /api/products router. Reads are public; writes require a token. */
+/** Builds the /api/products router. Reads are public; writes require the admin role. */
 export function productsRouter(db) {
   const router = Router()
 
@@ -27,7 +27,7 @@ export function productsRouter(db) {
     res.json(product)
   })
 
-  router.post('/', requireAuth, (req, res) => {
+  router.post('/', requireAdmin, (req, res) => {
     if (!isValidProduct(req.body)) {
       return res.status(400).json({ error: 'name (non-empty string) and price (number) are required' })
     }
@@ -38,7 +38,7 @@ export function productsRouter(db) {
     res.status(201).json(findById.get(info.lastInsertRowid))
   })
 
-  router.put('/:id', requireAuth, (req, res) => {
+  router.put('/:id', requireAdmin, (req, res) => {
     const id = Number(req.params.id)
     const existing = findById.get(id)
     if (!existing) return res.status(404).json({ error: 'Product not found' })
@@ -60,7 +60,7 @@ export function productsRouter(db) {
     res.json(findById.get(id))
   })
 
-  router.delete('/:id', requireAuth, (req, res) => {
+  router.delete('/:id', requireAdmin, (req, res) => {
     const info = db.prepare('DELETE FROM products WHERE id = ?').run(Number(req.params.id))
     if (info.changes === 0) return res.status(404).json({ error: 'Product not found' })
     res.status(204).end()
