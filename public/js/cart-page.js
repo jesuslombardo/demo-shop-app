@@ -3,7 +3,7 @@
  * checkout. Everything here is local (window.Cart); nothing hits the server
  * until the order is placed on the checkout page.
  */
-Session.initPage()
+Session.initPage({ customerOnly: true })
 
 const itemsEl = document.getElementById('cart-items')
 const emptyEl = document.getElementById('cart-empty')

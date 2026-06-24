@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { authenticate, issueToken, requireAuth, requireAdmin } from '../../src/auth.js'
+import { authenticate, issueToken, requireAuth, requireAdmin, requireCustomer } from '../../src/auth.js'
 
 // Pure credential check — no HTTP, no DB. Returns the user record (with role) or null.
 test('authenticate accepts the demo shopper as a customer', () => {
@@ -103,6 +103,40 @@ test('requireAdmin returns 401 when no token is present', () => {
   const res = fakeRes()
 
   requireAdmin(req, res, () => {
+    throw new Error('next should not be called without a token')
+  })
+
+  assert.equal(res.statusCode, 401)
+})
+
+test('requireCustomer calls next for a customer token', () => {
+  const req = { headers: { authorization: `Bearer ${issueToken('standard_user', 'customer')}` } }
+  const res = fakeRes()
+  let nextCalled = false
+
+  requireCustomer(req, res, () => {
+    nextCalled = true
+  })
+
+  assert.equal(nextCalled, true)
+})
+
+test('requireCustomer returns 403 for a non-customer (admin) token', () => {
+  const req = { headers: { authorization: `Bearer ${issueToken('admin', 'admin')}` } }
+  const res = fakeRes()
+
+  requireCustomer(req, res, () => {
+    throw new Error('next should not be called for an admin')
+  })
+
+  assert.equal(res.statusCode, 403)
+})
+
+test('requireCustomer returns 401 when no token is present', () => {
+  const req = { headers: {} }
+  const res = fakeRes()
+
+  requireCustomer(req, res, () => {
     throw new Error('next should not be called without a token')
   })
 
