@@ -1,9 +1,13 @@
 const form = document.getElementById('login-form')
 const errorEl = document.getElementById('error')
 
-// Already authenticated? Skip straight to the catalogue.
-if (localStorage.getItem('token')) {
+// Already authenticated with a still-valid token? Skip straight to the
+// catalogue. A stale/expired token is cleared instead, so the user sees the
+// login form again rather than being bounced to a page they can't use.
+if (Session.isLoggedIn()) {
   window.location.replace('/products.html')
+} else {
+  Session.clear()
 }
 
 form.addEventListener('submit', async (event) => {

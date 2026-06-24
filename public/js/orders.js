@@ -45,7 +45,7 @@ function renderOrder(order) {
 }
 
 async function load() {
-  const res = await fetch('/api/orders', { headers: Session.authHeaders() })
+  const res = await Session.apiFetch('/api/orders')
   if (!res.ok) {
     emptyEl.textContent = 'Could not load your orders.'
     emptyEl.hidden = false

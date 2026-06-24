@@ -5,30 +5,88 @@
  * them back, attach the Bearer header, and wire the common topbar controls
  * (logout, mobile hamburger, live cart badge). Exposed as window.Session so the
  * plain page scripts can reuse it. Depends on window.Cart for the badge, so
- * load cart.js before session.js.
+ * load cart.js before session.js (the login page omits both — it only needs
+ * the token-freshness helpers below).
+ *
+ * A token isn't "present or absent" — it EXPIRES (1h TTL, see src/auth.js). So
+ * "logged in" means a token that exists AND hasn't expired. Treating a stale
+ * token as a live session is what trapped users on a page they couldn't use
+ * (login redirected away, checkout 401'd). Everything here checks freshness.
  */
 ;(function () {
+  /** Decode a JWT's payload claims. No signature check — this is display/UX
+   * only; the server stays authoritative. Returns the claims, or null if the
+   * token is missing or unparseable. */
+  function decodeClaims(token) {
+    try {
+      const part = token.split('.')[1]
+      const base64 = part.replace(/-/g, '+').replace(/_/g, '/')
+      const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')
+      return JSON.parse(atob(padded))
+    } catch {
+      return null
+    }
+  }
+
+  /** True only if the token exists and its `exp` is still in the future. */
+  function tokenIsFresh(token) {
+    const claims = token && decodeClaims(token)
+    if (!claims || typeof claims.exp !== 'number') return false
+    return claims.exp * 1000 > Date.now()
+  }
+
   const Session = {
     token: () => localStorage.getItem('token'),
     role: () => localStorage.getItem('role'),
     username: () => localStorage.getItem('username'),
     isAdmin: () => localStorage.getItem('role') === 'admin',
 
-    /** No token? Bounce to login. Returns the token for convenience. */
+    /** A usable session = a token that exists and hasn't expired. */
+    isLoggedIn: () => tokenIsFresh(Session.token()),
+
+    /** Forget the stored session (without navigating). */
+    clear() {
+      localStorage.removeItem('token')
+      localStorage.removeItem('role')
+      localStorage.removeItem('username')
+    },
+
+    /** No usable session? Drop any stale token and bounce to login. Returns the
+     * token for convenience. */
     requireLogin() {
-      const token = Session.token()
-      if (!token) window.location.replace('/')
-      return token
+      if (!Session.isLoggedIn()) {
+        Session.clear()
+        window.location.replace('/')
+        return null
+      }
+      return Session.token()
     },
 
     authHeaders() {
       return { 'Content-Type': 'application/json', Authorization: `Bearer ${Session.token()}` }
     },
 
+    /**
+     * fetch() for authenticated API calls: attaches the Bearer header and, if
+     * the server rejects the token (401 — expired/invalid), clears the session
+     * and returns to login. The returned promise then never settles, so callers
+     * don't read a response we're already navigating away from. Use this for
+     * every protected request; the public GET /api/products can use plain fetch.
+     */
+    async apiFetch(url, options = {}) {
+      const res = await fetch(url, {
+        ...options,
+        headers: { ...Session.authHeaders(), ...(options.headers || {}) },
+      })
+      if (res.status === 401) {
+        Session.logout()
+        return new Promise(() => {})
+      }
+      return res
+    },
+
     logout() {
-      localStorage.removeItem('token')
-      localStorage.removeItem('role')
-      localStorage.removeItem('username')
+      Session.clear()
       window.location.assign('/')
     },
 

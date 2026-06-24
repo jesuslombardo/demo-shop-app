@@ -38,7 +38,7 @@ async function load() {
     return
   }
 
-  const res = await fetch(`/api/orders/${id}`, { headers: Session.authHeaders() })
+  const res = await Session.apiFetch(`/api/orders/${id}`)
   if (!res.ok) {
     renderError(res.status === 404 ? 'Order not found.' : 'Could not load the order.')
     return
