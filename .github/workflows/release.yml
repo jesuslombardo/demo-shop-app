@@ -1,0 +1,49 @@
+name: Release
+
+# Automated, Conventional-Commit-driven releases via release-please.
+# On each push to main it maintains a "release PR" that bumps the version in
+# package.json and CHANGELOG.md from the commit history; merging that PR tags
+# the version (vX.Y.Z) and publishes a GitHub Release. The release PR goes
+# through the same required checks as any other PR, which is what makes this
+# safe on a protected `main` (no bot pushing version commits straight to it).
+#
+# ── One-time setup (mirrors jesuslombardo/playwright-typescript) ─────────────
+# This uses a GitHub App token, NOT the default GITHUB_TOKEN, on purpose: PRs
+# opened by GITHUB_TOKEN do NOT trigger workflows, so their required checks
+# would never run and the release PR could never merge on this protected main.
+# A short-lived App token is a distinct identity, so the checks DO run.
+# Required for this workflow to do anything:
+#   1. Install the "release-please" GitHub App on this repo (the same App the
+#      testing repo uses), granting it Contents + Pull requests write.
+#   2. Add two repo secrets:
+#        RELEASE_PLEASE_APP_ID
+#        RELEASE_PLEASE_APP_PRIVATE_KEY
+# Until then this workflow is a no-op-on-failure (the token step fails); nothing
+# else in CI/CD is affected.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      # Mint a short-lived token from the GitHub App so the release PR is opened
+      # by a non-GITHUB_TOKEN identity. Unlike a PAT there is nothing to renew —
+      # the token is regenerated on every run.
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.RELEASE_PLEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_PLEASE_APP_PRIVATE_KEY }}
+
+      # Manifest-driven (release-please-config.json + .release-please-manifest.json).
+      - uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
