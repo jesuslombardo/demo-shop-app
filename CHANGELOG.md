@@ -4,6 +4,14 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.1](https://github.com/jesuslombardo/demo-shop-app/compare/v2.0.0...v2.0.1) (2026-06-24)
+
+
+### Bug Fixes
+
+* reveal the checkout form when the cart has items ([#18](https://github.com/jesuslombardo/demo-shop-app/issues/18)) ([e288762](https://github.com/jesuslombardo/demo-shop-app/commit/e288762e9adf9680ec86cef0db6d02b57f163769))
+* session recovery, visible logout, empty-cart checkout, and storefront a11y ([#16](https://github.com/jesuslombardo/demo-shop-app/issues/16)) ([4c1ee9c](https://github.com/jesuslombardo/demo-shop-app/commit/4c1ee9cd9bb68747c97ff0d3273c9e0e5a9b629c))
+
 ## [2.0.0] - 2026-06-24
 
 ### Added
