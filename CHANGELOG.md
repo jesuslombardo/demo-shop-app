@@ -4,6 +4,13 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.0](https://github.com/jesuslombardo/demo-shop-app/compare/v2.0.1...v2.1.0) (2026-06-24)
+
+
+### Features
+
+* gate shopping to customers — admins can't cart/checkout/order ([#19](https://github.com/jesuslombardo/demo-shop-app/issues/19)) ([9154e62](https://github.com/jesuslombardo/demo-shop-app/commit/9154e628ee72d46a508b26b1fbba6c9b0676a5b4))
+
 ## [2.0.1](https://github.com/jesuslombardo/demo-shop-app/compare/v2.0.0...v2.0.1) (2026-06-24)
 
 

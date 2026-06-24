@@ -1,6 +1,6 @@
 {
   "name": "demo-shop-app",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Minimal full-stack demo shop (Express + SQLite + JWT + Swagger + vanilla UI). A purpose-built System Under Test (SUT) for the playwright-typescript testing framework — enables a real testing pyramid (API tests + E2E against the same app).",
   "type": "module",
   "main": "server.js",
