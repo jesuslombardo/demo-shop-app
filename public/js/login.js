@@ -27,8 +27,10 @@ form.addEventListener('submit', async (event) => {
       return
     }
 
-    const { token } = await res.json()
+    const { token, role, username: who } = await res.json()
     localStorage.setItem('token', token)
+    localStorage.setItem('role', role)
+    localStorage.setItem('username', who)
     window.location.assign('/products.html')
   } catch {
     errorEl.textContent = 'Network error — is the API running?'

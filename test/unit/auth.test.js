@@ -1,18 +1,25 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { authenticate, issueToken, requireAuth } from '../../src/auth.js'
+import { authenticate, issueToken, requireAuth, requireAdmin } from '../../src/auth.js'
 
-// Pure credential check — no HTTP, no DB.
-test('authenticate accepts the demo user', () => {
-  assert.equal(authenticate('standard_user', 'secret_sauce'), true)
+// Pure credential check — no HTTP, no DB. Returns the user record (with role) or null.
+test('authenticate accepts the demo shopper as a customer', () => {
+  assert.deepEqual(authenticate('standard_user', 'secret_sauce'), {
+    username: 'standard_user',
+    role: 'customer',
+  })
+})
+
+test('authenticate accepts the admin user with the admin role', () => {
+  assert.deepEqual(authenticate('admin', 'admin_sauce'), { username: 'admin', role: 'admin' })
 })
 
 test('authenticate rejects a wrong password', () => {
-  assert.equal(authenticate('standard_user', 'nope'), false)
+  assert.equal(authenticate('standard_user', 'nope'), null)
 })
 
 test('authenticate rejects an unknown user', () => {
-  assert.equal(authenticate('ghost', 'secret_sauce'), false)
+  assert.equal(authenticate('ghost', 'secret_sauce'), null)
 })
 
 // Minimal fakes so we can unit-test the middleware without a server.
@@ -63,6 +70,40 @@ test('requireAuth returns 401 for an invalid token', () => {
 
   requireAuth(req, res, () => {
     throw new Error('next should not be called for an invalid token')
+  })
+
+  assert.equal(res.statusCode, 401)
+})
+
+test('requireAdmin calls next for an admin token', () => {
+  const req = { headers: { authorization: `Bearer ${issueToken('admin', 'admin')}` } }
+  const res = fakeRes()
+  let nextCalled = false
+
+  requireAdmin(req, res, () => {
+    nextCalled = true
+  })
+
+  assert.equal(nextCalled, true)
+})
+
+test('requireAdmin returns 403 for a non-admin (customer) token', () => {
+  const req = { headers: { authorization: `Bearer ${issueToken('standard_user', 'customer')}` } }
+  const res = fakeRes()
+
+  requireAdmin(req, res, () => {
+    throw new Error('next should not be called for a customer')
+  })
+
+  assert.equal(res.statusCode, 403)
+})
+
+test('requireAdmin returns 401 when no token is present', () => {
+  const req = { headers: {} }
+  const res = fakeRes()
+
+  requireAdmin(req, res, () => {
+    throw new Error('next should not be called without a token')
   })
 
   assert.equal(res.statusCode, 401)

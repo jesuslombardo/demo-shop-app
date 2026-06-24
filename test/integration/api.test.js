@@ -17,14 +17,17 @@ test.before(async () => {
 
 test.after(() => server?.close())
 
-async function login() {
+async function login(username = 'standard_user', password = 'secret_sauce') {
   const res = await fetch(`${base}/api/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'standard_user', password: 'secret_sauce' }),
+    body: JSON.stringify({ username, password }),
   })
-  return (await res.json()).token
+  return res.json()
 }
+
+const customerToken = async () => (await login()).token
+const adminToken = async () => (await login('admin', 'admin_sauce')).token
 
 test('GET /health returns ok', async () => {
   const res = await fetch(`${base}/health`)
@@ -52,6 +55,11 @@ test('login rejects bad credentials', async () => {
   assert.equal(res.status, 401)
 })
 
+test('login returns the user role', async () => {
+  assert.equal((await login()).role, 'customer')
+  assert.equal((await login('admin', 'admin_sauce')).role, 'admin')
+})
+
 test('creating a product requires a token', async () => {
   const res = await fetch(`${base}/api/products`, {
     method: 'POST',
@@ -61,8 +69,18 @@ test('creating a product requires a token', async () => {
   assert.equal(res.status, 401)
 })
 
-test('authenticated CRUD round-trip', async () => {
-  const token = await login()
+test('a customer token cannot write products (403)', async () => {
+  const token = await customerToken()
+  const res = await fetch(`${base}/api/products`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ name: 'Customer Item', price: 1 }),
+  })
+  assert.equal(res.status, 403)
+})
+
+test('admin CRUD round-trip', async () => {
+  const token = await adminToken()
   const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
 
   const created = await fetch(`${base}/api/products`, {
@@ -86,4 +104,79 @@ test('authenticated CRUD round-trip', async () => {
 
   const gone = await fetch(`${base}/api/products/${id}`)
   assert.equal(gone.status, 404)
+})
+
+test('listing orders requires a token', async () => {
+  const res = await fetch(`${base}/api/orders`)
+  assert.equal(res.status, 401)
+})
+
+test('checkout places an order with a server-computed total, then it appears in history', async () => {
+  const token = await customerToken()
+  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+
+  // Order two of the cheapest seeded product and one of the next.
+  const catalogue = await (await fetch(`${base}/api/products`)).json()
+  const [a, b] = catalogue
+  const expectedTotal = Number((a.price * 2 + b.price * 1).toFixed(2))
+
+  const placed = await fetch(`${base}/api/orders`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      items: [
+        { productId: a.id, quantity: 2 },
+        { productId: b.id, quantity: 1 },
+      ],
+      customer: { name: 'Ada Lovelace', address: '1 Analytical Engine Way' },
+    }),
+  })
+  assert.equal(placed.status, 201)
+  const order = await placed.json()
+  assert.equal(order.total, expectedTotal)
+  assert.equal(order.items.length, 2)
+  // Line price/name are snapshots taken from the catalogue server-side.
+  assert.equal(order.items[0].name, a.name)
+  assert.equal(order.items[0].lineTotal, Number((a.price * 2).toFixed(2)))
+
+  // Fetch it back by id.
+  const fetched = await fetch(`${base}/api/orders/${order.id}`, { headers })
+  assert.equal(fetched.status, 200)
+  assert.equal((await fetched.json()).id, order.id)
+
+  // It shows up in the user's history.
+  const history = await (await fetch(`${base}/api/orders`, { headers })).json()
+  assert.ok(history.some((o) => o.id === order.id))
+})
+
+test('checkout rejects an unknown product', async () => {
+  const token = await customerToken()
+  const res = await fetch(`${base}/api/orders`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      items: [{ productId: 999999, quantity: 1 }],
+      customer: { name: 'Ghost', address: 'Nowhere' },
+    }),
+  })
+  assert.equal(res.status, 400)
+})
+
+test("a user cannot read another user's order", async () => {
+  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${await customerToken()}` }
+  const placed = await fetch(`${base}/api/orders`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      items: [{ productId: 1, quantity: 1 }],
+      customer: { name: 'Ada', address: 'Somewhere' },
+    }),
+  })
+  const { id } = await placed.json()
+
+  // The admin is a different user (different JWT sub) → their scope excludes it.
+  const asAdmin = await fetch(`${base}/api/orders/${id}`, {
+    headers: { Authorization: `Bearer ${await adminToken()}` },
+  })
+  assert.equal(asAdmin.status, 404)
 })

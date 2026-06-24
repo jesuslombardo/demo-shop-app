@@ -4,6 +4,51 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0] - 2026-06-24
+
+### Added
+
+- **Customer shopping experience** — the buyer journey that complements the
+  admin catalogue:
+  - **Storefront** — `products.html` adapts to the signed-in role: customers get
+    a quantity + **Add to cart** (`data-test="add-to-cart"`) on each product.
+  - **Cart** (`cart.html`) — a client-side cart in `localStorage` (`Cart`,
+    `public/js/cart.js`): update quantities, remove lines, live subtotal and a
+    topbar badge.
+  - **Checkout** (`checkout.html`) — shipping form + order summary that POSTs to
+    the new orders API.
+  - **Confirmation** (`confirmation.html`) and **order history**
+    (`orders.html`), backed by persisted orders.
+- **Orders API** (`/api/orders`, owned by `products-service`):
+  - `POST /api/orders` — place an order; the server **reprices every line from
+    the live catalogue** and computes the total (client prices are never
+    trusted), snapshotting name/price so history is stable.
+  - `GET /api/orders` / `GET /api/orders/:id` — the signed-in user's history and
+    a single order (scoped to the owner in the JWT).
+  - New `orders` + `order_items` tables in `src/db.js`.
+- **Roles** — two demo users: `standard_user` / `secret_sauce` (**customer**)
+  and `admin` / `admin_sauce` (**admin**). The JWT and `/api/login` response now
+  carry a `role`; `requireAdmin` middleware added.
+- **Favicon** — a branded SVG icon (`public/favicon.svg`) linked from every page;
+  the legacy `/favicon.ico` probe is answered with `204` so it no longer 404s in
+  the browser console.
+
+### Changed
+
+- **BREAKING — product writes now require the `admin` role.** `POST/PUT/DELETE
+  /api/products` return **403** for a valid non-admin token (still **401**
+  without one). Log in as `admin` to manage the catalogue. The `/api/login`
+  response gained a `role` field.
+
+### Notes
+
+- The cart is intentionally client-side; only **orders** are persisted
+  server-side. Behaviour is identical in monolith and microservices modes
+  (orders travel with `products-service`; the gateway already routes
+  `/api/orders` there).
+- Consumers of the `playwright-typescript` framework that create products as
+  `standard_user` must switch to the `admin` credentials.
+
 ## [1.2.0] - 2026-06-24
 
 ### Fixed

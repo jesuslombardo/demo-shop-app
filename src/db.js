@@ -52,7 +52,30 @@ export function createDb(path = process.env.DB_PATH || ':memory:') {
       name TEXT NOT NULL,
       price REAL NOT NULL,
       description TEXT NOT NULL DEFAULT ''
-    )
+    );
+
+    /* A placed order: who bought, where it ships, the computed total and when.
+       Totals and line prices are SNAPSHOTS taken at checkout, so order history
+       stays correct even if a product is later re-priced or deleted. */
+    CREATE TABLE IF NOT EXISTS orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      username TEXT NOT NULL,
+      customer_name TEXT NOT NULL,
+      customer_address TEXT NOT NULL,
+      customer_city TEXT NOT NULL DEFAULT '',
+      customer_zip TEXT NOT NULL DEFAULT '',
+      total REAL NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS order_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id INTEGER NOT NULL REFERENCES orders(id),
+      product_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      price REAL NOT NULL,
+      quantity INTEGER NOT NULL
+    );
   `)
   seedIfEmpty(db)
   return db

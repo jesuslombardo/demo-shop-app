@@ -29,18 +29,34 @@ See [`CHANGELOG.md`](CHANGELOG.md).
 | Method   | Path                 | Auth   | Description                          |
 | -------- | -------------------- | ------ | ------------------------------------ |
 | `GET`    | `/health`            | —      | Readiness probe (`{ status: 'ok' }`) |
-| `POST`   | `/api/login`         | —      | Exchange credentials for a JWT       |
+| `POST`   | `/api/login`         | —      | Exchange credentials for a JWT (+`role`) |
 | `GET`    | `/api/products`      | —      | List all products                    |
 | `GET`    | `/api/products/:id`  | —      | Get one product                      |
-| `POST`   | `/api/products`      | Bearer | Create a product                     |
-| `PUT`    | `/api/products/:id`  | Bearer | Update a product                     |
-| `DELETE` | `/api/products/:id`  | Bearer | Delete a product                     |
+| `POST`   | `/api/products`      | Admin  | Create a product                     |
+| `PUT`    | `/api/products/:id`  | Admin  | Update a product                     |
+| `DELETE` | `/api/products/:id`  | Admin  | Delete a product                     |
+| `POST`   | `/api/orders`        | Bearer | Place an order (checkout)            |
+| `GET`    | `/api/orders`        | Bearer | The signed-in user's order history   |
+| `GET`    | `/api/orders/:id`    | Bearer | Get one of your orders               |
 | `GET`    | `/api/docs`          | —      | Swagger UI                           |
 | `GET`    | `/api/openapi.json`  | —      | Raw OpenAPI spec                      |
 
-**Demo credentials** (public by design, mirroring Sauce Demo): `standard_user` / `secret_sauce`.
+**Demo credentials** (public by design): `standard_user` / `secret_sauce` (**customer** — shops)
+and `admin` / `admin_sauce` (**admin** — manages the catalogue).
 
 The catalogue is seeded with the six Sauce Demo products on startup.
+
+### Roles & shopping flow
+
+The `/api/login` response and the JWT carry a **role**:
+
+- **customer** (`standard_user`) — browses `products.html`, adds items to a
+  client-side cart (`localStorage`), and goes **cart → checkout → confirmation →
+  order history**. Orders are persisted server-side and scoped to the user; the
+  server reprices every line from the catalogue, so totals can't be tampered with.
+- **admin** (`admin`) — same `products.html`, but in **management** mode: the
+  Add-product form and per-item Edit/Remove. Catalogue writes
+  (`POST/PUT/DELETE /api/products`) require this role and return **403** otherwise.
 
 ## Run it
 
@@ -100,15 +116,17 @@ Key points:
 | `PORT`          | `3000`               | HTTP port                                      |
 | `DB_PATH`       | `:memory:`           | SQLite path; a file persists data across boots |
 | `JWT_SECRET`    | `demo-shop-dev-secret` | Signing secret                               |
-| `DEMO_USER`     | `standard_user`      | Demo username                                  |
-| `DEMO_PASSWORD` | `secret_sauce`       | Demo password                                  |
+| `DEMO_USER`     | `standard_user`      | Customer username                              |
+| `DEMO_PASSWORD` | `secret_sauce`       | Customer password                             |
+| `ADMIN_USER`    | `admin`              | Admin username                                 |
+| `ADMIN_PASSWORD`| `admin_sauce`        | Admin password                                 |
 
 ## Tests & CI
 
 Two tiers, run with Node's built-in test runner (`node --test`, no extra deps):
 
-- `npm run test:unit` — **unit tests** of pure functions (`authenticate`, `requireAuth`/JWT, `isValidProduct`); no HTTP, no DB.
-- `npm run test:integration` — **integration tests** that boot the app and exercise it over HTTP (health, auth, CRUD round-trip).
+- `npm run test:unit` — **unit tests** of pure functions (`authenticate`, `requireAuth`/`requireAdmin`/JWT, `isValidProduct`, `isValidOrder`); no HTTP, no DB.
+- `npm run test:integration` — **integration tests** that boot the app and exercise it over HTTP (health, auth + roles, admin CRUD round-trip, checkout/order lifecycle).
 - `npm test` — both. `npm run lint` — ESLint (flat config).
 - `npm run test:contract` — **Pact provider verification**: replays the `shop-web` consumer's contract (owned by the `playwright-typescript` repo) against auth-service. Set `PACT_DIR` to that repo's `pacts/` folder. If the login response drifts (e.g. renames `token`), it **fails the build**. Runs as a non-required CI job (`Contract (Pact provider verification)`).
 

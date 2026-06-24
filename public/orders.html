@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Demo Shop — My orders</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="topbar">
+      <h1 data-test="title" id="title">My orders</h1>
+      <button
+        data-test="menu-toggle"
+        id="menu-toggle"
+        class="menu-toggle ghost"
+        type="button"
+        aria-label="Menu"
+        aria-controls="topbar-nav"
+        aria-expanded="false"
+      >
+        ☰
+      </button>
+      <nav data-test="topbar-nav" id="topbar-nav" class="topbar-nav">
+        <a data-test="catalog-link" href="/products.html" class="navlink">🛍️ Catalogue</a>
+        <a data-test="cart-link" href="/cart.html" class="navlink">🛒 Cart (<span id="cart-count">0</span>)</a>
+        <button data-test="logout" id="logout" class="ghost">Logout</button>
+      </nav>
+    </header>
+
+    <main>
+      <p data-test="orders-empty" id="orders-empty" class="empty" hidden>
+        You haven't placed any orders yet. <a href="/products.html">Start shopping →</a>
+      </p>
+      <section data-test="orders-list" id="orders-list" class="orders-list"></section>
+    </main>
+
+    <script src="/js/cart.js"></script>
+    <script src="/js/session.js"></script>
+    <script src="/js/orders.js"></script>
+  </body>
+</html>
