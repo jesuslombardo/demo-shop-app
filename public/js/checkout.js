@@ -59,9 +59,8 @@ form.addEventListener('submit', async (event) => {
     },
   }
 
-  const res = await fetch('/api/orders', {
+  const res = await Session.apiFetch('/api/orders', {
     method: 'POST',
-    headers: Session.authHeaders(),
     body: JSON.stringify(payload),
   })
 

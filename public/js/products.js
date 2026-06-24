@@ -2,7 +2,8 @@
  * The catalogue page, adapted to the signed-in user's role:
  *   - admin    → management view: an "Add product" form + Edit/Remove per card.
  *   - customer → storefront view: a quantity + "Add to cart" per card.
- * Reads are public; the admin write calls go through Session.authHeaders().
+ * Reads are public; the admin write calls go through Session.apiFetch (which
+ * attaches auth and returns to login if the token has expired).
  */
 Session.initPage()
 
@@ -42,6 +43,9 @@ function renderShopCard(p) {
   qty.min = '1'
   qty.value = '1'
   qty.className = 'qty'
+  // No visible label by design, so name it for assistive tech (WCAG: form
+  // elements must have labels). Per-product so each card's input is distinct.
+  qty.setAttribute('aria-label', `Quantity for ${p.name}`)
 
   const add = document.createElement('button')
   add.dataset.test = 'add-to-cart'
@@ -93,7 +97,7 @@ function renderCard(p) {
   remove.className = 'danger'
   remove.textContent = 'Remove'
   remove.addEventListener('click', async () => {
-    await fetch(`/api/products/${p.id}`, { method: 'DELETE', headers: Session.authHeaders() })
+    await Session.apiFetch(`/api/products/${p.id}`, { method: 'DELETE' })
     await loadProducts()
   })
 
@@ -138,9 +142,8 @@ function renderEditCard(p) {
   save.textContent = 'Save'
   save.addEventListener('click', async () => {
     error.hidden = true
-    const res = await fetch(`/api/products/${p.id}`, {
+    const res = await Session.apiFetch(`/api/products/${p.id}`, {
       method: 'PUT',
-      headers: Session.authHeaders(),
       body: JSON.stringify({
         name: nameInput.value,
         price: Number(priceInput.value),
@@ -190,9 +193,8 @@ if (isAdmin) {
     const price = Number(document.getElementById('new-product-price').value)
     const description = document.getElementById('new-product-description').value
 
-    const res = await fetch('/api/products', {
+    const res = await Session.apiFetch('/api/products', {
       method: 'POST',
-      headers: Session.authHeaders(),
       body: JSON.stringify({ name, price, description }),
     })
 

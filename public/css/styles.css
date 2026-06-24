@@ -114,6 +114,14 @@ input {
   text-decoration: underline;
 }
 
+/* The global .ghost is dark-on-light, right for the white product cards. But
+   inside the dark topbar — Logout on desktop, and the same button in the
+   mobile dropdown (also dark) — it needs light ink to be visible. */
+.topbar .ghost {
+  color: #fff;
+  border-color: #fff;
+}
+
 .badge {
   background: var(--accent);
   color: var(--ink);
@@ -273,6 +281,13 @@ main {
   grid-template-columns: 1.2fr 1fr;
   gap: 1.25rem;
   align-items: start;
+}
+
+/* An author `display` would otherwise override the `hidden` attribute the page
+   toggles (UA `[hidden]{display:none}` loses the cascade), leaving the form
+   visible on an empty cart. Restore `hidden` for this grid. */
+.checkout-grid[hidden] {
+  display: none;
 }
 
 /* --- confirmation --- */

@@ -30,6 +30,7 @@ export default [
         localStorage: 'readonly',
         fetch: 'readonly',
         setTimeout: 'readonly',
+        atob: 'readonly',
         URLSearchParams: 'readonly',
         // Shared helpers defined on window by cart.js / session.js, loaded first.
         Cart: 'readonly',
