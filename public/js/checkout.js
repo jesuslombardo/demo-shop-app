@@ -25,6 +25,12 @@ function renderSummary() {
     return false
   }
 
+  // Cart has items: reveal the form/summary and hide the empty state. (The
+  // markup starts hidden; now that `.checkout-grid[hidden]` is honoured, the
+  // grid must be explicitly un-hidden here — it isn't decorative CSS.)
+  grid.hidden = false
+  emptyEl.hidden = true
+
   linesEl.replaceChildren(
     ...lines.map((line) => {
       const row = document.createElement('div')
