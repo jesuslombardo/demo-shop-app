@@ -4,7 +4,10 @@
   --ink: #132c49;
   --accent: #3ddc91;
   --danger: #e2231a;
-  --muted: #6b7a8d;
+  /* Darkened from #6b7a8d so muted text clears WCAG AA 4.5:1 on the light bg. */
+  --muted: #5a6675;
+  /* Accessible price color: #3ddc91 on white is only 1.8:1, far below AA. */
+  --price: #1a7f48;
 }
 
 * {
@@ -125,8 +128,7 @@ main {
 }
 
 .product .price {
-  color: var(--accent);
-  filter: brightness(0.7);
+  color: var(--price);
   font-weight: 700;
   margin: 0 0 0.5rem;
 }
